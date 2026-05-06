@@ -13,7 +13,7 @@
 #include "Board.h"
 #include "ScoreManager.h"
 
-enum class GameState { RUNNING, PAUSED, GAME_OVER, QUIT };
+enum class GameState { MENU ,RUNNING, PAUSED, GAME_OVER, QUIT };
 
 class Game {
 public:

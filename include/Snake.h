@@ -14,7 +14,7 @@
 // =============================================================================
 
 #include <deque>
-#include "C:/Users/Amr/CLionProjects/SnakeGame/include/Common.h"
+#include "Common.h"
 
 class Snake {
 public:

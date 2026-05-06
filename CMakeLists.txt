@@ -6,6 +6,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Instructs CMake to automatically handle Qt's Meta-Object Compiler and UI compiler
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+# Tell CMake EXACTLY where to look for Qt (replace with your actual path)
+set(CMAKE_PREFIX_PATH "C:/Qt/6.11.0/mingw_64")
+
+# Find the Qt Framework
+find_package(Qt6 COMPONENTS Widgets REQUIRED)
+
 # ── Source files ─────────────────────────────────────────────────────────────
 set(SOURCES
         src/main.cpp
@@ -14,6 +25,9 @@ set(SOURCES
         src/Board.cpp
         src/ScoreManager.cpp
         src/Game.cpp
+        include/MainWindow.h
+        src/MainWindow.cpp
+        src/MainWindow.ui    # Added the UI file here
 )
 
 # ── Executable ────────────────────────────────────────────────────────────────
@@ -21,6 +35,10 @@ add_executable(SnakeGame ${SOURCES})
 
 # ── Include path (so #include "Snake.h" works without a path prefix) ─────────
 target_include_directories(SnakeGame PRIVATE include)
+
+# ── Link Qt Libraries ────────────────────────────────────────────────────────
+# This links the required Qt widgets to your game executable
+target_link_libraries(SnakeGame PRIVATE Qt6::Widgets)
 
 # ── Compiler warnings ────────────────────────────────────────────────────────
 if (MSVC)
