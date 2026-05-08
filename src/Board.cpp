@@ -41,6 +41,17 @@ void Board::resetInner() {
                 grid_[y][x] = Cell::EMPTY;
 }
 
+void Board::resetObstacles()
+{
+    for (int y = 1; y < BOARD_HEIGHT - 1; ++y)
+    {
+        for (int x = 1; x < BOARD_WIDTH - 1; ++x)
+        {
+            grid_[y][x] = Cell::EMPTY;
+        }
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // update() — rebuilds the grid from current game-object positions.
 //

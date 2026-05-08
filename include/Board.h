@@ -43,6 +43,7 @@ public:
     // Resets all inner (non-wall) cells and removes obstacles.
     void resetInner();
 
+    void resetObstacles();
 private:
     std::vector<std::vector<Cell>> grid_;  // grid_[y][x]
     void initWalls();

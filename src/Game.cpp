@@ -190,16 +190,6 @@ void Game::update() {
 // ─────────────────────────────────────────────────────────────────────────────
 // resetGame() — restores initial state for a new game.
 // ─────────────────────────────────────────────────────────────────────────────
-void Game::resetGame() {
-    snake_  = Snake(BOARD_WIDTH / 2, BOARD_HEIGHT / 2);
-    score_  = 0;
-    level_  = 1;
-    speed_  = 200;
-    state_  = GameState::RUNNING;
-    board_.resetInner();
-    board_.update(snake_, food_);
-    food_.spawn(board_.getGrid());
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // showGameOver() — blocks until R (restart) or Q (quit).
@@ -218,20 +208,6 @@ void Game::showGameOver() {
     std::cout << "  ║  Press Q to quit             ║\n";
     std::cout << "  ╚══════════════════════════════╝\n";
     std::cout.flush();
-
-    char key = 0;
-    while (key != 'r' && key != 'R' && key != 'q' && key != 'Q') {
-#ifdef _WIN32
-        key = static_cast<char>(_getch());
-#else
-        read(STDIN_FILENO, &key, 1);
-#endif
-    }
-    if (key == 'r' || key == 'R') {
-        resetGame();
-    } else {
-        state_ = GameState::QUIT;
-    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

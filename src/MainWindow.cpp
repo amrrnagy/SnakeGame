@@ -122,7 +122,7 @@ void MainWindow::resetGame() {
     shieldPos_           = {-1,-1};
     shieldFlashTicks_    = 0;
     particles_.clear();
-
+    board_.resetObstacles();
     board_.resetInner();
     board_.update(snake_, food_);
     food_.spawn(board_.getGrid());
