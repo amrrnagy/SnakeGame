@@ -36,6 +36,7 @@ public:
 
     // O(n) self-collision: checks if head matches any body segment.
     bool checkSelfCollision() const;
+    void setHeadPosition(int x, int y);
 
 private:
     std::deque<Position> body_;   // body_[0] = head; body_.back() = tail
