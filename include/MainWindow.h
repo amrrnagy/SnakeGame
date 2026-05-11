@@ -7,6 +7,8 @@
 #include <QPaintEvent>
 #include <QEvent>
 #include <QResizeEvent>
+#include <QColor>
+#include <QString>
 
 #include "Snake.h"
 #include "Food.h"
@@ -18,11 +20,22 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-// ─── Particle for food-eaten / shield-break burst effects ────────────────────
+// ─── Particle ────────────────────────────────────────────────────────────────
 struct Particle {
     float x, y, vx, vy, life;
     QColor color;
 };
+
+// ─── Snake Skin ───────────────────────────────────────────────────────────────
+struct SnakeSkin {
+    QString name;
+    QColor  headColor;
+    QColor  bodyColor;
+    QColor  glowColor;
+};
+
+// ─── Difficulty ───────────────────────────────────────────────────────────────
+enum class Difficulty { EASY, NORMAL, HARD };
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -33,19 +46,19 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
-    void keyReleaseEvent(QKeyEvent *event) override;          // for Shift release
+    void keyReleaseEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void gameTick();
-    void bonusFoodExpire();    // called when bonus food timer runs out
+    void bonusFoodExpire();
 
 private:
     Ui::MainWindow *ui;
     QTimer *timer_;
-    QTimer *bonusTimer_;       // counts down bonus fruit lifespan
-private:
+    QTimer *bonusTimer_;
+
     bool inputRegisteredThisTick_ = false;
 
     // ── Core subsystems ───────────────────────────────────────────────────────
@@ -55,63 +68,89 @@ private:
     ScoreManager scoreManager_;
 
     // ── Game state ────────────────────────────────────────────────────────────
-    GameState state_;
-    int  score_, level_, speed_;
+    GameState  state_;
+    int        score_, level_, speed_;
 
-    // ── Progress tracking ─────────────────────────────────────────────────────
-    int  foodEaten_;          // resets each level
+    // ── Progress ──────────────────────────────────────────────────────────────
+    int  foodEaten_;
     int  totalFoodEaten_;
     static constexpr int FOOD_PER_LEVEL = 5;
 
-    // ── Feature: Wall wrap-around ─────────────────────────────────────────────
-    // No extra state needed — handled in wrapPosition()
+    // ── Speed boost ───────────────────────────────────────────────────────────
+    bool shiftHeld_;
+    bool boosting_;
+    static constexpr int BOOST_SPEED = 60;
 
-    // ── Feature: Speed boost (hold Shift) ────────────────────────────────────
-    bool shiftHeld_;           // true while Shift is pressed
-    bool boosting_;            // true during an active boost tick
-    static constexpr int BOOST_SPEED = 60;   // ms per tick while boosting
+    // ── Bonus fruit ───────────────────────────────────────────────────────────
+    bool     bonusActive_;
+    Position bonusPos_;
+    int      bonusTimeLeft_;
+    static constexpr int BONUS_LIFETIME     = 80;
+    static constexpr int BONUS_POINTS_MULT  = 3;
 
-    // ── Feature: Bonus fruit ─────────────────────────────────────────────────
-    bool        bonusActive_;      // is a bonus fruit on the board?
-    Position    bonusPos_;         // where the bonus fruit is
-    int         bonusTimeLeft_;    // ticks remaining (shown as countdown ring)
-    static constexpr int BONUS_LIFETIME = 80;   // ticks (~5 s at 200 ms)
-    static constexpr int BONUS_POINTS_MULT = 3; // worth 3× normal food
-
-    // ── Feature: Shield power-up ─────────────────────────────────────────────
-    bool     shieldActive_;    // snake currently has a shield
-    bool     shieldPickupOnBoard_; // shield orb is placed on the grid
+    // ── Shield ────────────────────────────────────────────────────────────────
+    bool     shieldActive_;
+    bool     shieldPickupOnBoard_;
     Position shieldPos_;
-    int      shieldFlashTicks_;    // brief flash when shield absorbs a hit
+    int      shieldFlashTicks_;
+
+    // ── 🎨 Skin selector ──────────────────────────────────────────────────────
+    // All available skins defined in cpp
+    std::vector<SnakeSkin> skins_;
+    int  selectedSkin_;        // index into skins_
+    // Menu navigation
+    int  menuSkinScroll_;      // index of skin being previewed in menu
+
+    // ── 🌡️ Difficulty ─────────────────────────────────────────────────────────
+    Difficulty difficulty_;
+    int        selectedDiff_;  // 0=Easy 1=Normal 2=Hard (menu cursor)
+
+    // Difficulty tuning helpers
+    int  baseSpeed()       const;   // starting ms/tick
+    int  bombCount(int lvl)const;   // obstacles per level-up
+    bool shieldAllowed()   const;   // Hard disables shield drops
+    bool wrapAllowed()     const;   // Hard disables wall wrap
 
     // ── Visual ────────────────────────────────────────────────────────────────
     std::vector<Particle> particles_;
     int  animFrame_;
     bool newHighScore_;
 
+    // ── Menu state ────────────────────────────────────────────────────────────
+    // Menu has two sub-pages: skin select and diff select
+    enum class MenuPage { MAIN, SKIN, DIFF };
+    MenuPage menuPage_;
+
     // ── Paint ─────────────────────────────────────────────────────────────────
     void paintBoard(QPainter &p, int boardW, int boardH);
+    void paintMenuMain  (QPainter &p, float bw, float bh);
+    void paintMenuSkin  (QPainter &p, float bw, float bh);
+    void paintMenuDiff  (QPainter &p, float bw, float bh);
+
     void drawCell(QPainter &p, float cx, float cy, float cw, float ch,
                   const QColor &col, bool rounded = true, float glowR = 0.f);
     void drawGlow(QPainter &p, float cx, float cy, float r,
                   const QColor &col, int alpha);
-    void drawBonusFruit(QPainter &p, float cx, float cy, float cw, float ch);
-    void drawShieldOrb(QPainter &p, float cx, float cy, float cw, float ch);
-    void drawShieldAura(QPainter &p, float hx, float hy, float cw, float ch);
+    void drawBonusFruit (QPainter &p, float cx, float cy, float cw, float ch);
+    void drawShieldOrb  (QPainter &p, float cx, float cy, float cw, float ch);
+    void drawShieldAura (QPainter &p, float hx, float hy, float cw, float ch);
+    void drawSnakePreview(QPainter &p, const SnakeSkin &skin,
+                          float cx, float cy, float size);
 
     // ── Particles ─────────────────────────────────────────────────────────────
     void spawnParticles(float px, float py, const QColor &col, int n = 12);
     void updateParticles();
 
-    // ── Logic helpers ─────────────────────────────────────────────────────────
+    // ── Logic ─────────────────────────────────────────────────────────────────
     void checkCollisions();
     void spawnObstaclesForLevel(int lvl);
     void maybeSpawnBonusFruit();
     void maybeSpawnShield();
-    void wrapPosition();        // teleport head if it crossed a wall
+    void wrapPosition();
     void resetGame();
     int  speedForLevel(int lvl) const;
     void updateHUD();
+    void applyDifficulty();   // called at game start to set speed_ etc.
 };
 
 #endif // MAINWINDOW_H

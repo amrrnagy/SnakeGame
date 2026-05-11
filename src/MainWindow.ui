@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>660</width>
-    <height>580</height>
+    <width>680</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,51 +16,44 @@
   <property name="styleSheet">
    <string>QMainWindow { background-color: #080810; }</string>
   </property>
+
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string>QWidget { background-color: #080810; }</string>
+    <string>QWidget#centralwidget { background-color: #080810; }</string>
    </property>
-   <layout class="QVBoxLayout" name="rootLayout">
-    <property name="spacing">
-     <number>6</number>
-    </property>
-    <property name="leftMargin">
-     <number>12</number>
-    </property>
-    <property name="topMargin">
-     <number>10</number>
-    </property>
-    <property name="rightMargin">
-     <number>12</number>
-    </property>
-    <property name="bottomMargin">
-     <number>10</number>
-    </property>
 
-    <!-- ═══ TOP HUD BAR ═══ -->
+   <!-- Root: vertical stack — HUD bar on top, board fills rest -->
+   <layout class="QVBoxLayout" name="rootLayout">
+    <property name="spacing"><number>6</number></property>
+    <property name="leftMargin"><number>10</number></property>
+    <property name="topMargin"><number>8</number></property>
+    <property name="rightMargin"><number>10</number></property>
+    <property name="bottomMargin"><number>8</number></property>
+
+    <!-- ══ HUD BAR (fixed height, full width) ══════════════════════════ -->
     <item>
      <widget class="QWidget" name="hudBar">
-      <property name="maximumHeight">
-       <number>48</number>
-      </property>
+      <property name="minimumHeight"><number>44</number></property>
+      <property name="maximumHeight"><number>44</number></property>
       <property name="styleSheet">
        <string>
         QWidget#hudBar {
-        background-color: #0d0d20;
-        border: 1px solid #1e1e40;
+        background-color: #0d0d22;
+        border: 1px solid #1e1e44;
         border-radius: 6px;
         }
         QLabel { background: transparent; }
        </string>
       </property>
-      <layout class="QHBoxLayout" name="hudLayout">
-       <property name="leftMargin"><number>16</number></property>
-       <property name="topMargin"><number>0</number></property>
-       <property name="rightMargin"><number>16</number></property>
-       <property name="bottomMargin"><number>0</number></property>
-       <property name="spacing"><number>0</number></property>
 
-       <!-- SCORE -->
+      <layout class="QHBoxLayout" name="hudLayout">
+       <property name="leftMargin"><number>18</number></property>
+       <property name="topMargin"><number>0</number></property>
+       <property name="rightMargin"><number>18</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+       <property name="spacing"><number>4</number></property>
+
+       <!-- SCORE label -->
        <item>
         <widget class="QLabel" name="hudScoreLabel">
          <property name="text"><string>SCORE</string></property>
@@ -68,15 +61,16 @@
          <property name="styleSheet"><string>color: #44447a; letter-spacing: 2px;</string></property>
         </widget>
        </item>
+       <!-- SCORE value -->
        <item>
         <widget class="QLabel" name="scoreValueLabel">
          <property name="text"><string>0</string></property>
-         <property name="font"><font><pointsize>18</pointsize><bold>true</bold></font></property>
-         <property name="styleSheet"><string>color: #ffffff; margin-left: 6px; margin-right: 20px;</string></property>
+         <property name="font"><font><pointsize>17</pointsize><bold>true</bold></font></property>
+         <property name="styleSheet"><string>color: #ffffff; margin-left:5px; margin-right:22px;</string></property>
         </widget>
        </item>
 
-       <!-- LEVEL -->
+       <!-- LEVEL label -->
        <item>
         <widget class="QLabel" name="hudLevelLabel">
          <property name="text"><string>LVL</string></property>
@@ -84,69 +78,33 @@
          <property name="styleSheet"><string>color: #44447a; letter-spacing: 2px;</string></property>
         </widget>
        </item>
+       <!-- LEVEL value -->
        <item>
         <widget class="QLabel" name="levelValueLabel">
          <property name="text"><string>1</string></property>
-         <property name="font"><font><pointsize>18</pointsize><bold>true</bold></font></property>
-         <property name="styleSheet"><string>color: #00d4ff; margin-left: 6px; margin-right: 20px;</string></property>
+         <property name="font"><font><pointsize>17</pointsize><bold>true</bold></font></property>
+         <property name="styleSheet"><string>color: #00d4ff; margin-left:5px; margin-right:22px;</string></property>
         </widget>
        </item>
 
-       <!-- PROGRESS toward next level -->
+       <!-- PROGRESS (apple counter) -->
        <item>
         <widget class="QLabel" name="progressValueLabel">
          <property name="text"><string>🍎 0 / 5</string></property>
          <property name="font"><font><pointsize>11</pointsize></font></property>
-         <property name="styleSheet"><string>color: #cc4444; margin-right: 20px;</string></property>
+         <property name="styleSheet"><string>color: #dd3333; margin-right:10px;</string></property>
         </widget>
        </item>
 
-       <!-- Spacer pushes HS to the right -->
+       <!-- Push HIGH SCORE to the far right -->
        <item>
         <spacer>
          <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property>
         </spacer>
        </item>
 
-       <item>
-        <widget class="QComboBox" name="modeComboBox">
-         <item>
-          <property name="text">
-           <string>Wall Wrap Mode</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Solid Walls Mode</string>
-          </property>
-         </item>
-         <property name="styleSheet">
-          <string>
-           QComboBox {
-            background-color: #1e1e40;
-            color: #ffffff;
-            border: 1px solid #44447a;
-            border-radius: 4px;
-            padding: 2px 10px;
-           }
-           QComboBox::drop-down {
-            border: 0px;
-           }
-          </string>
-         </property>
-        </widget>
-       </item>
-
-       <!-- Spacer between combobox and high score -->
-       <item>
-        <spacer>
-         <property name="orientation"><enum>Qt::Horizontal</enum></property>
-         <property name="sizeType"><enum>QSizePolicy::Fixed</enum></property>
-         <property name="sizeHint"><size><width>20</width><height>10</height></size></property>
-        </spacer>
-       </item>
-
-       <!-- HIGH SCORE -->
+       <!-- BEST label -->
        <item>
         <widget class="QLabel" name="hudHsLabel">
          <property name="text"><string>BEST</string></property>
@@ -154,11 +112,12 @@
          <property name="styleSheet"><string>color: #44447a; letter-spacing: 2px;</string></property>
         </widget>
        </item>
+       <!-- BEST value -->
        <item>
         <widget class="QLabel" name="hsValueLabel">
          <property name="text"><string>0</string></property>
-         <property name="font"><font><pointsize>18</pointsize><bold>true</bold></font></property>
-         <property name="styleSheet"><string>color: #ffd700; margin-left: 6px;</string></property>
+         <property name="font"><font><pointsize>17</pointsize><bold>true</bold></font></property>
+         <property name="styleSheet"><string>color: #ffd700; margin-left:5px;</string></property>
         </widget>
        </item>
 
@@ -166,20 +125,15 @@
      </widget>
     </item>
 
-    <!-- ═══ GAME BOARD ═══ -->
+    <!-- ══ GAME BOARD — expands to fill ALL remaining space ════════════ -->
     <item>
      <widget class="QWidget" name="gameBoard" native="true">
-      <property name="minimumSize">
-       <size>
-        <width>630</width>
-        <height>504</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>630</width>
-        <height>504</height>
-       </size>
+      <!-- No fixed min/max size — let the layout stretch it -->
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>1</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
       </property>
       <property name="styleSheet">
        <string>background-color: transparent;</string>
