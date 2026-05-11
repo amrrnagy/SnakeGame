@@ -45,6 +45,8 @@ private:
     Ui::MainWindow *ui;
     QTimer *timer_;
     QTimer *bonusTimer_;       // counts down bonus fruit lifespan
+private:
+    bool inputRegisteredThisTick_ = false;
 
     // ── Core subsystems ───────────────────────────────────────────────────────
     Snake        snake_;

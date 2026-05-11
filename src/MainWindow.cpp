@@ -175,6 +175,8 @@ void MainWindow::gameTick() {
     animFrame_++;
     updateParticles();
 
+    inputRegisteredThisTick_= false;
+
     // Update boost state
     boosting_ = shiftHeld_;
     timer_->setInterval(boosting_ ? BOOST_SPEED : speed_);
@@ -396,7 +398,8 @@ void MainWindow::spawnObstaclesForLevel(int lvl) {
 // =============================================================================
 // keyPressEvent
 // =============================================================================
-void MainWindow::keyPressEvent(QKeyEvent *event) {
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
     // ⚡ Speed boost — Shift key
     if (event->key() == Qt::Key_Shift) {
         shiftHeld_ = true;
@@ -413,13 +416,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
         }
         return;
     }
-
-    switch (event->key()) {
-        case Qt::Key_W: case Qt::Key_Up:    snake_.setDirection(Direction::UP);    break;
-        case Qt::Key_S: case Qt::Key_Down:  snake_.setDirection(Direction::DOWN);  break;
-        case Qt::Key_A: case Qt::Key_Left:  snake_.setDirection(Direction::LEFT);  break;
-        case Qt::Key_D: case Qt::Key_Right: snake_.setDirection(Direction::RIGHT); break;
-
+    if (!inputRegisteredThisTick_)
+    {
+        switch (event->key()) {
+        case Qt::Key_W: case Qt::Key_Up:    snake_.setDirection(Direction::UP); inputRegisteredThisTick_ = true;    break;
+        case Qt::Key_S: case Qt::Key_Down:  snake_.setDirection(Direction::DOWN); inputRegisteredThisTick_ = true;  break;
+        case Qt::Key_A: case Qt::Key_Left:  snake_.setDirection(Direction::LEFT); inputRegisteredThisTick_ = true;  break;
+        case Qt::Key_D: case Qt::Key_Right: snake_.setDirection(Direction::RIGHT); inputRegisteredThisTick_ = true; break;
         case Qt::Key_P:
             if (state_ == GameState::RUNNING) {
                 state_ = GameState::PAUSED;
@@ -442,6 +445,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
         case Qt::Key_Escape:
             QApplication::quit();
             break;
+        }
     }
 }
 
