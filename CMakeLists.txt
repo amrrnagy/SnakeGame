@@ -12,7 +12,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # Tell CMake EXACTLY where to look for Qt (replace with your actual path)
-set(CMAKE_PREFIX_PATH "C:/Qt/6.11.0/mingw_64")
+set(CMAKE_PREFIX_PATH "D:/Programs/Qt/6.11.0/mingw_64")
 
 # Find the Qt Framework
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
@@ -56,3 +56,12 @@ add_custom_command(TARGET SnakeGame POST_BUILD
         $<TARGET_FILE_DIR:SnakeGame>/data
         COMMENT "Copying data/ folder to build output..."
 )
+
+# This will copy the necessary DLLs to your build folder automatically
+if(WIN32)
+    add_custom_command(TARGET SnakeGame POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E env PATH="D:/Programs/Qt/6.11.0/mingw_64/bin"
+            windeployqt --no-compiler-runtime $<TARGET_FILE:SnakeGame>
+            COMMENT "Copying Qt DLLs to build directory..."
+    )
+endif()
