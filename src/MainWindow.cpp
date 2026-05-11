@@ -86,6 +86,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(timer_,      &QTimer::timeout, this, &MainWindow::gameTick);
     connect(bonusTimer_, &QTimer::timeout, this, &MainWindow::bonusFoodExpire);
 
+    connect(ui->modeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]() {
+        ui->gameBoard->update();
+    });
+
     resize(680, 580);
     resetGame();
 }
@@ -126,6 +130,8 @@ void MainWindow::resetGame() {
     board_.resetInner();
     board_.update(snake_, food_);
     food_.spawn(board_.getGrid());
+
+    ui->modeComboBox->setEnabled(true);
 
     bonusTimer_->stop();
     timer_->stop();
@@ -191,7 +197,10 @@ void MainWindow::gameTick() {
     if (shieldFlashTicks_ > 0) shieldFlashTicks_--;
 
     snake_.move();
-    wrapPosition();       // 🌀 wrap before collision check
+
+    if (ui->modeComboBox->currentText() == "Wall Wrap Mode") {
+        wrapPosition();       // 🌀 wrap before collision check
+    }
     checkCollisions();
 
     if (state_ == GameState::RUNNING)
@@ -280,13 +289,33 @@ void MainWindow::checkCollisions() {
     }
 
     // ── Lethal collision: obstacle or self ────────────────────────────────────
-    bool lethal = board_.isObstacle(hx, hy) || snake_.checkSelfCollision();
+    bool wallHit = false;
+    if (ui->modeComboBox->currentText() == "Solid Walls Mode") {
+        if (hx <= 0 || hx >= BOARD_WIDTH - 1 || hy <= 0 || hy >= BOARD_HEIGHT - 1) {
+            wallHit = true;
+        }
+    }
+
+    bool lethal = board_.isObstacle(hx, hy) || snake_.checkSelfCollision() || wallHit;
     if (lethal) {
         if (shieldActive_) {
             // 🛡️ Shield absorbs the hit
             shieldActive_     = false;
             shieldFlashTicks_ = 12;
             spawnParticles(hx*cw+cw/2.f, hy*ch+ch/2.f, COL_SHIELD, 30);
+
+            // If we hit a wall in Solid Walls mode, we need to push the snake back
+            // otherwise it will just die again on the next tick
+            if (wallHit) {
+                // Determine direction of wall hit and bounce back
+                if (hx <= 0) hx = 1;
+                else if (hx >= BOARD_WIDTH - 1) hx = BOARD_WIDTH - 2;
+                if (hy <= 0) hy = 1;
+                else if (hy >= BOARD_HEIGHT - 1) hy = BOARD_HEIGHT - 2;
+
+                snake_.setHeadPosition(hx, hy);
+            }
+
             // Remove the obstacle that was hit so we don't instantly die again
             // (board doesn't expose removeObstacle, so we just continue)
             return;
@@ -295,6 +324,7 @@ void MainWindow::checkCollisions() {
         timer_->stop();
         bonusTimer_->stop();
         scoreManager_.update(score_);
+        ui->modeComboBox->setEnabled(true);
         ui->gameBoard->update();
         return;
     }
@@ -411,6 +441,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
     if (state_ == GameState::MENU) {
         if (event->key() == Qt::Key_Space || event->key() == Qt::Key_Return) {
             state_ = GameState::RUNNING;
+            ui->modeComboBox->setEnabled(false);
             timer_->start(speed_);
             ui->gameBoard->update();
         }
@@ -580,16 +611,18 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
     for (int y=0; y<=BOARD_HEIGHT; ++y) p.drawLine(QPointF(0,y*ch), QPointF(boardW,y*ch));
 
     // ── Wall wrap indicators: draw arrows on wall cells to hint teleport ──────
-    for (int x=1; x<BOARD_WIDTH-1; ++x) {
-        // Top wall → down arrow hint
-        p.setPen(QColor(COL_HEAD.red(), COL_HEAD.green(), COL_HEAD.blue(), 40));
-        p.setFont(QFont("Arial", static_cast<int>(ch*0.45f)));
-        p.drawText(QRectF(x*cw, 0, cw, ch), Qt::AlignCenter, "↕");
-    }
-    for (int y=1; y<BOARD_HEIGHT-1; ++y) {
-        p.setPen(QColor(COL_HEAD.red(), COL_HEAD.green(), COL_HEAD.blue(), 40));
-        p.drawText(QRectF(0, y*ch, cw, ch), Qt::AlignCenter, "↔");
-        p.drawText(QRectF((BOARD_WIDTH-1)*cw, y*ch, cw, ch), Qt::AlignCenter, "↔");
+    if (ui->modeComboBox->currentText() == "Wall Wrap Mode") {
+        for (int x=1; x<BOARD_WIDTH-1; ++x) {
+            // Top wall → down arrow hint
+            p.setPen(QColor(COL_HEAD.red(), COL_HEAD.green(), COL_HEAD.blue(), 40));
+            p.setFont(QFont("Arial", static_cast<int>(ch*0.45f)));
+            p.drawText(QRectF(x*cw, 0, cw, ch), Qt::AlignCenter, "↕");
+        }
+        for (int y=1; y<BOARD_HEIGHT-1; ++y) {
+            p.setPen(QColor(COL_HEAD.red(), COL_HEAD.green(), COL_HEAD.blue(), 40));
+            p.drawText(QRectF(0, y*ch, cw, ch), Qt::AlignCenter, "↔");
+            p.drawText(QRectF((BOARD_WIDTH-1)*cw, y*ch, cw, ch), Qt::AlignCenter, "↔");
+        }
     }
 
     // ── Cells ─────────────────────────────────────────────────────────────────
@@ -601,9 +634,17 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
             switch (grid[y][x]) {
 
                 case Cell::WALL: {
+                    QColor wallColor = COL_WALL;
+                    QColor wallLightColor = COL_WALL.lighter(130);
+
+                    if (ui->modeComboBox->currentText() == "Solid Walls Mode") {
+                        wallColor = QColor(100, 30, 30);
+                        wallLightColor = QColor(150, 40, 40);
+                    }
+
                     QLinearGradient wg(cx,cy,cx+cw,cy+ch);
-                    wg.setColorAt(0, COL_WALL.lighter(130));
-                    wg.setColorAt(1, COL_WALL);
+                    wg.setColorAt(0, wallLightColor);
+                    wg.setColorAt(1, wallColor);
                     p.setPen(Qt::NoPen); p.setBrush(wg);
                     p.drawRect(QRectF(cx,cy,cw,ch));
                     break;
@@ -681,9 +722,14 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
         p.fillRect(0, sy, boardW, 1, QColor(0,0,0,18));
 
     // ── Border ────────────────────────────────────────────────────────────────
+    QColor borderRunningCol = COL_HEAD;
+    if (ui->modeComboBox->currentText() == "Solid Walls Mode") {
+        borderRunningCol = QColor(150, 40, 40);
+    }
+
     QColor bc2 = shieldActive_ ? COL_SHIELD
                : boosting_     ? COL_BONUS
-               : (state_==GameState::RUNNING) ? COL_HEAD : QColor(80,80,120);
+               : (state_==GameState::RUNNING) ? borderRunningCol : QColor(80,80,120);
     float bAlpha = 80+40*std::sin(animFrame_*0.08f);
     bc2.setAlpha(static_cast<int>(bAlpha));
     p.setPen(QPen(bc2,2.f)); p.setBrush(Qt::NoBrush);

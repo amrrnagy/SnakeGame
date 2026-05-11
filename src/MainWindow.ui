@@ -108,6 +108,44 @@
         </spacer>
        </item>
 
+       <item>
+        <widget class="QComboBox" name="modeComboBox">
+         <item>
+          <property name="text">
+           <string>Wall Wrap Mode</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Solid Walls Mode</string>
+          </property>
+         </item>
+         <property name="styleSheet">
+          <string>
+           QComboBox {
+            background-color: #1e1e40;
+            color: #ffffff;
+            border: 1px solid #44447a;
+            border-radius: 4px;
+            padding: 2px 10px;
+           }
+           QComboBox::drop-down {
+            border: 0px;
+           }
+          </string>
+         </property>
+        </widget>
+       </item>
+
+       <!-- Spacer between combobox and high score -->
+       <item>
+        <spacer>
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeType"><enum>QSizePolicy::Fixed</enum></property>
+         <property name="sizeHint"><size><width>20</width><height>10</height></size></property>
+        </spacer>
+       </item>
+
        <!-- HIGH SCORE -->
        <item>
         <widget class="QLabel" name="hudHsLabel">
