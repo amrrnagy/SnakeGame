@@ -175,6 +175,7 @@ void MainWindow::resetGame() {
     shieldPos_           = {-1,-1};
     shieldFlashTicks_    = 0;
     particles_.clear();
+    board_.resetObstacles();
     menuPage_            = MenuPage::MAIN;
 
     applyDifficulty();
