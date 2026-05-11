@@ -36,25 +36,21 @@
 #include <cstdlib>
 #include <algorithm>
 
-// ─── Static palette (non-skin colours) ───────────────────────────────────────
 static const QColor COL_BG       {  8,   8,  16 };
 static const QColor COL_GRID     { 18,  18,  35 };
 static const QColor COL_WALL     { 35,  35,  60 };
-static const QColor COL_WALL_H   { 90,  20,  20 };   // Hard mode wall colour
+static const QColor COL_WALL_H   { 90,  20,  20 };
 static const QColor COL_FOOD     {255,  50,  80 };
 static const QColor COL_BONUS    {255, 180,  30 };
 static const QColor COL_SHIELD   { 40, 200, 255 };
 static const QColor COL_OBSTACLE {220,  60,  20 };
 static const QColor COL_OVERLAY  {  0,   0,   0, 210 };
 
-// Difficulty label colours
 static const QColor COL_EASY   { 60, 220,  80 };
 static const QColor COL_NORMAL {220, 180,  30 };
 static const QColor COL_HARD   {230,  50,  50 };
 
-// =============================================================================
 // Constructor
-// =============================================================================
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -81,7 +77,7 @@ MainWindow::MainWindow(QWidget *parent)
     , selectedDiff_(1)
     , menuPage_(MenuPage::MAIN)
 {
-    // ── Define all skins ──────────────────────────────────────────────────────
+
     skins_ = {
         { "Neon Green",    { 57, 255,  20}, { 34, 200,  10}, { 57, 255,  20} },
         { "Plasma Purple", {200,  50, 255}, {150,  30, 200}, {200,  50, 255} },
@@ -103,17 +99,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() { delete ui; }
 
-// =============================================================================
-// resizeEvent
-// =============================================================================
 void MainWindow::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
     ui->gameBoard->update();
 }
 
-// =============================================================================
-// Difficulty helpers
-// =============================================================================
+
 int MainWindow::baseSpeed() const {
     switch (difficulty_) {
         case Difficulty::EASY:   return 250;
@@ -127,13 +118,13 @@ int MainWindow::bombCount(int lvl) const {
     switch (difficulty_) {
         case Difficulty::EASY:
             if (lvl < 5) return 0;
-            return (lvl - 4) * 3;            // gentle ramp from level 5
+            return (lvl - 4) * 3;
         case Difficulty::NORMAL:
             if (lvl < 3) return 0;
-            return lvl * lvl;                // quadratic
+            return lvl * lvl;
         case Difficulty::HARD:
             if (lvl < 2) return 0;
-            return lvl * lvl + lvl;          // quadratic + linear, brutal
+            return lvl * lvl + lvl;
     }
     return 0;
 }
@@ -155,9 +146,6 @@ void MainWindow::applyDifficulty() {
     speed_ = baseSpeed();
 }
 
-// =============================================================================
-// resetGame
-// =============================================================================
 void MainWindow::resetGame() {
     snake_               = Snake(BOARD_WIDTH / 2, BOARD_HEIGHT / 2);
     score_               = 0;
@@ -191,9 +179,6 @@ void MainWindow::resetGame() {
     ui->gameBoard->update();
 }
 
-// =============================================================================
-// HUD
-// =============================================================================
 void MainWindow::updateHUD() {
     ui->scoreValueLabel->setText(QString::number(score_));
     ui->levelValueLabel->setText(QString::number(level_));
@@ -217,9 +202,6 @@ void MainWindow::updateHUD() {
     ui->progressValueLabel->setText(progress);
 }
 
-// =============================================================================
-// eventFilter
-// =============================================================================
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     if (watched == ui->gameBoard && event->type() == QEvent::Paint) {
         QPainter painter(ui->gameBoard);
@@ -231,9 +213,6 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     return QMainWindow::eventFilter(watched, event);
 }
 
-// =============================================================================
-// gameTick
-// =============================================================================
 void MainWindow::gameTick() {
     if (state_ != GameState::RUNNING) return;
 
@@ -263,9 +242,6 @@ void MainWindow::gameTick() {
     ui->gameBoard->update();
 }
 
-// =============================================================================
-// wrapPosition
-// =============================================================================
 void MainWindow::wrapPosition() {
     auto [hx, hy] = snake_.getHead();
     bool wrapped = false;
@@ -276,9 +252,6 @@ void MainWindow::wrapPosition() {
     if (wrapped) snake_.setHeadPosition(hx, hy);
 }
 
-// =============================================================================
-// checkCollisions
-// =============================================================================
 void MainWindow::checkCollisions() {
     auto [hx, hy] = snake_.getHead();
     float cw = static_cast<float>(ui->gameBoard->width())  / BOARD_WIDTH;
@@ -304,7 +277,7 @@ void MainWindow::checkCollisions() {
         bonusTimer_->stop();
     }
 
-    // Wall collision (only Hard — wrap handles it on Easy/Normal)
+    // Wall collision
     bool wallHit = !wrapAllowed() &&
                    (hx <= 0 || hx >= BOARD_WIDTH-1 ||
                     hy <= 0 || hy >= BOARD_HEIGHT-1);
@@ -334,7 +307,7 @@ void MainWindow::checkCollisions() {
         return;
     }
 
-    // Normal food
+
     if (snake_.getHead() == food_.getPosition()) {
         spawnParticles(hx*cw+cw/2.f, hy*ch+ch/2.f, COL_FOOD, 16);
         snake_.grow();
@@ -359,9 +332,7 @@ void MainWindow::checkCollisions() {
     }
 }
 
-// =============================================================================
 // Spawners
-// =============================================================================
 void MainWindow::spawnObstaclesForLevel(int lvl) {
     int count = bombCount(lvl);
     if (count <= 0) return;

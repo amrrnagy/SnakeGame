@@ -1,6 +1,4 @@
-// =============================================================================
-// Game.cpp — Implements the main game loop and coordinates all subsystems.
-// =============================================================================
+
 
 #include "Game.h"
 #include <iostream>
@@ -8,16 +6,15 @@
 #include <thread>
 #include <cstdlib>   // rand()
 
-// ── Platform-specific headers for non-blocking keyboard input ────────────────
+
 #ifdef _WIN32
-    #include <conio.h>     // _kbhit(), _getch()
-    #include <windows.h>   // Sleep()
+    #include <conio.h>
+    #include <windows.h>
 #else
     #include <termios.h>
     #include <unistd.h>
     #include <fcntl.h>
-    // Saved terminal state for restore on exit
-    static struct termios g_originalTermios;
+static struct termios g_originalTermios;
 #endif
 
 // ─────────────────────────────────────────────────────────────────────────────
