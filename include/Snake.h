@@ -14,6 +14,7 @@ public:
     const std::deque<Position>& getBody() const;
     int getLength() const;
     bool checkSelfCollision() const;
+    void setHeadPosition(int x, int y);
 
 private:
     std::deque<Position> body_;

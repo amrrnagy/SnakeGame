@@ -13,6 +13,7 @@ public:
     bool isWall(int x, int y) const;
     bool isObstacle(int x, int y) const;
     void addObstacle(int x, int y);
+    void removeObstacle(int x, int y);
     const std::vector<std::vector<Cell>>& getGrid() const;
     void resetInner();
     void resetObstacles();

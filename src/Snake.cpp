@@ -59,3 +59,9 @@ bool Snake::checkSelfCollision() const {
     }
     return false;
 }
+
+void Snake::setHeadPosition(int x, int y) {
+    if (!body_.empty()) {
+        body_.front() = { x, y };
+    }
+}

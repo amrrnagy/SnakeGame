@@ -38,12 +38,17 @@ void Board::addObstacle(int x, int y) {
     }
 }
 
+void Board::removeObstacle(int x, int y) {
+    if (y > 0 && y < BOARD_HEIGHT - 1 && x > 0 && x < BOARD_WIDTH - 1) {
+        if (grid_[y][x] == Cell::OBSTACLE) grid_[y][x] = Cell::EMPTY;
+    }
+}
+
 bool Board::isObstacle(int x, int y) const {
     if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return false;
     return grid_[y][x] == Cell::OBSTACLE;
 }
 
-// RESTORED MISSING FUNCTION
 bool Board::isWall(int x, int y) const {
     if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return true;
     return grid_[y][x] == Cell::WALL;

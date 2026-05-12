@@ -24,10 +24,19 @@ private:
     int       speed_;
     int       foodEaten_;
 
+    Position  bonusPos_;
+    int       bonusTimeLeft_;
+
+    Position  shieldPos_;
+    bool      shieldActive_;
+
     void handleInput();
+    void wrapPosition();
     void update();
     void checkCollisions();
     void spawnObstaclesForLevel(int lvl);
+    void spawnBonus();
+    void spawnShield();
     void showGameOver();
     int  speedForLevel(int lvl) const;
     char getKey();

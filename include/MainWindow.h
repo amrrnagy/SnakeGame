@@ -49,13 +49,24 @@ private:
     int        foodEaten_;
     static constexpr int FOOD_PER_LEVEL = 5;
 
+    Position bonusPos_;
+    int      bonusTimeLeft_;
+
+    Position shieldPos_;
+    bool     shieldActive_;
+
     void setupUI();
+    void wrapPosition();
     void checkCollisions();
+    void spawnBonus();
+    void spawnShield();
     void spawnObstaclesForLevel(int lvl);
     void resetGame();
     void updateHUD();
     int  speedForLevel(int lvl) const;
+
     void paintBoard(QPainter &p, int boardW, int boardH);
+    void drawGlow(QPainter &p, float cx, float cy, float r, const QColor &col);
 };
 
 #endif // MAINWINDOW_H

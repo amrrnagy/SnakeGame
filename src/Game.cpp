@@ -56,7 +56,9 @@ char Game::getKey() {
 Game::Game()
     : snake_(BOARD_WIDTH / 2, BOARD_HEIGHT / 2),
       state_(GameState::RUNNING),
-      score_(0), level_(1), speed_(200), foodEaten_(0)
+      score_(0), level_(1), speed_(200), foodEaten_(0),
+      bonusPos_({-1,-1}), bonusTimeLeft_(0),
+      shieldPos_({-1,-1}), shieldActive_(false)
 {
     initTerminal();
     board_.update(snake_, food_);
@@ -68,7 +70,7 @@ Game::~Game() {
 }
 
 int Game::speedForLevel(int lvl) const {
-    return std::max(50, 200 - (lvl - 1) * 15);
+    return std::max(60, 200 - (lvl - 1) * 15);
 }
 
 void Game::spawnObstaclesForLevel(int lvl) {
@@ -83,6 +85,38 @@ void Game::spawnObstaclesForLevel(int lvl) {
             ry = 1 + rand() % (BOARD_HEIGHT - 2);
         } while ((std::abs(rx - hx) < 3 && std::abs(ry - hy) < 3) || board_.getGrid()[ry][rx] != Cell::EMPTY);
         board_.addObstacle(rx, ry);
+    }
+}
+
+void Game::spawnBonus() {
+    std::vector<Position> cands;
+    const auto &grid = board_.getGrid();
+    for (int y = 1; y < BOARD_HEIGHT - 1; ++y) {
+        for (int x = 1; x < BOARD_WIDTH - 1; ++x) {
+            if (grid[y][x] == Cell::EMPTY && Position{x, y} != food_.getPosition() && Position{x, y} != shieldPos_) {
+                cands.push_back({x, y});
+            }
+        }
+    }
+    if (!cands.empty()) {
+        bonusPos_ = cands[rand() % cands.size()];
+        bonusTimeLeft_ = 40;
+    }
+}
+
+void Game::spawnShield() {
+    if (shieldActive_ || shieldPos_.first > 0) return;
+    std::vector<Position> cands;
+    const auto &grid = board_.getGrid();
+    for (int y = 1; y < BOARD_HEIGHT - 1; ++y) {
+        for (int x = 1; x < BOARD_WIDTH - 1; ++x) {
+            if (grid[y][x] == Cell::EMPTY && Position{x, y} != food_.getPosition() && Position{x, y} != bonusPos_) {
+                cands.push_back({x, y});
+            }
+        }
+    }
+    if (!cands.empty()) {
+        shieldPos_ = cands[rand() % cands.size()];
     }
 }
 
@@ -104,12 +138,45 @@ void Game::handleInput() {
     }
 }
 
+void Game::wrapPosition() {
+    auto [hx, hy] = snake_.getHead();
+    bool wrapped = false;
+
+    if (hx <= 0)                      { hx = BOARD_WIDTH - 2;  wrapped = true; }
+    else if (hx >= BOARD_WIDTH - 1)   { hx = 1;                wrapped = true; }
+    if (hy <= 0)                      { hy = BOARD_HEIGHT - 2; wrapped = true; }
+    else if (hy >= BOARD_HEIGHT - 1)  { hy = 1;                wrapped = true; }
+
+    if (wrapped) snake_.setHeadPosition(hx, hy);
+}
+
 void Game::checkCollisions() {
     auto [hx, hy] = snake_.getHead();
 
-    if (board_.isWall(hx, hy) || board_.isObstacle(hx, hy) || snake_.checkSelfCollision()) {
+    if (board_.isObstacle(hx, hy)) {
+        if (shieldActive_) {
+            shieldActive_ = false;
+            board_.removeObstacle(hx, hy);
+        } else {
+            state_ = GameState::GAME_OVER;
+            return;
+        }
+    } else if (snake_.checkSelfCollision()) {
         state_ = GameState::GAME_OVER;
         return;
+    }
+
+    if (shieldPos_.first > 0 && snake_.getHead() == shieldPos_) {
+        shieldActive_ = true;
+        shieldPos_ = {-1, -1};
+    }
+
+    if (bonusTimeLeft_ > 0 && snake_.getHead() == bonusPos_) {
+        score_ += 50 * level_;
+        scoreManager_.update(score_);
+        bonusTimeLeft_ = 0;
+        bonusPos_ = {-1, -1};
+        snake_.grow();
     }
 
     if (snake_.getHead() == food_.getPosition()) {
@@ -125,14 +192,24 @@ void Game::checkCollisions() {
             spawnObstaclesForLevel(level_);
         }
 
+        if (bonusTimeLeft_ <= 0 && rand() % 100 < 25) spawnBonus();
+        if (!shieldActive_ && shieldPos_.first < 0 && rand() % 100 < 15) spawnShield();
+
         board_.update(snake_, food_);
         food_.spawn(board_.getGrid());
     }
 }
 
 void Game::update() {
+    if (bonusTimeLeft_ > 0) {
+        bonusTimeLeft_--;
+        if (bonusTimeLeft_ <= 0) bonusPos_ = {-1, -1};
+    }
+
     snake_.move();
+    wrapPosition();
     checkCollisions();
+
     if (state_ == GameState::RUNNING) {
         board_.update(snake_, food_);
     }
