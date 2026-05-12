@@ -16,7 +16,7 @@ static const QColor COL_HEAD     { 57, 255,  20 };
 static const QColor COL_FOOD     { 255, 20, 100 };
 static const QColor COL_OBSTACLE { 255, 80,  20 };
 static const QColor COL_BONUS    { 255, 220, 40 };
-static const QColor COL_SHIELD   { 80, 160, 255 }; // Cyan/Blue Shield
+static const QColor COL_SHIELD   { 80, 160, 255 };
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), timer_(new QTimer(this)),
@@ -24,9 +24,6 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setupUI();
     connect(timer_, &QTimer::timeout, this, &MainWindow::gameTick);
-
-    // 750 width / 500 board height = 1.5 Aspect Ratio! (Perfect squares for 30x20)
-    // The extra 60px height is reserved for the HUD.
     resize(750, 560);
     resetGame();
 }
@@ -131,6 +128,7 @@ void MainWindow::resetGame() {
     bonusTimeLeft_ = 0;
     shieldPos_     = {-1, -1};
     shieldActive_  = false;
+    shiftHeld_     = false;
     speed_         = speedForLevel(level_);
     state_         = GameState::MENU;
 
@@ -152,6 +150,7 @@ void MainWindow::updateHUD() {
     QString progText = QString("🍎 %1/%2").arg(foodEaten_).arg(FOOD_PER_LEVEL);
     if (bonusTimeLeft_ > 0) progText += " 🌟";
     if (shieldActive_)      progText += " 🛡️";
+    if (shiftHeld_)         progText += " ⚡"; // Indicate sprinting
     progressValueLabel_->setText(progText);
 }
 
@@ -183,7 +182,7 @@ void MainWindow::gameTick() {
 
     if (bonusTimeLeft_ > 0) {
         bonusTimeLeft_--;
-        if (bonusTimeLeft_ <= 0) bonusPos_ = {-1, -1}; // Disappears cleanly
+        if (bonusTimeLeft_ <= 0) bonusPos_ = {-1, -1};
     }
 
     snake_.move();
@@ -198,8 +197,6 @@ void MainWindow::gameTick() {
 void MainWindow::checkCollisions() {
     auto [hx, hy] = snake_.getHead();
 
-    // Shield completely protects you from Obstacles by destroying them.
-    // However, hitting your own body is always fatal.
     if (board_.isObstacle(hx, hy)) {
         if (shieldActive_) {
             shieldActive_ = false;
@@ -217,13 +214,11 @@ void MainWindow::checkCollisions() {
         return;
     }
 
-    // Check Shield Pickup
     if (shieldPos_.first > 0 && snake_.getHead() == shieldPos_) {
         shieldActive_ = true;
         shieldPos_ = {-1, -1};
     }
 
-    // Check Bonus
     if (bonusTimeLeft_ > 0 && snake_.getHead() == bonusPos_) {
         score_ += 50 * level_;
         scoreManager_.update(score_);
@@ -232,7 +227,6 @@ void MainWindow::checkCollisions() {
         snake_.grow();
     }
 
-    // Check Regular Food
     if (snake_.getHead() == food_.getPosition()) {
         snake_.grow();
         score_ += 10 * level_;
@@ -243,11 +237,12 @@ void MainWindow::checkCollisions() {
             foodEaten_ = 0;
             level_++;
             speed_ = speedForLevel(level_);
-            timer_->setInterval(speed_);
+
+            // Maintain sprint speed if shift is currently held, otherwise update to new level speed
+            timer_->setInterval(shiftHeld_ ? BOOST_SPEED : speed_);
             spawnObstaclesForLevel(level_);
         }
 
-        // Random spawns
         if (bonusTimeLeft_ <= 0 && rand() % 100 < 25) spawnBonus();
         if (!shieldActive_ && shieldPos_.first < 0 && rand() % 100 < 15) spawnShield();
 
@@ -260,6 +255,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Q || event->key() == Qt::Key_Escape) {
         QApplication::quit(); return;
     }
+
+    // Sprint logic - Key Press
+    if (event->key() == Qt::Key_Shift) {
+        shiftHeld_ = true;
+        if (state_ == GameState::RUNNING) timer_->setInterval(BOOST_SPEED);
+        updateHUD();
+        return;
+    }
+
     if (event->key() == Qt::Key_Space || event->key() == Qt::Key_R) {
         if (state_ == GameState::MENU || state_ == GameState::GAME_OVER) {
             resetGame();
@@ -281,7 +285,17 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
         }
         inputRegisteredThisTick_ = true;
     } else if (state_ == GameState::PAUSED && event->key() == Qt::Key_P) {
-        state_ = GameState::RUNNING; timer_->start(speed_);
+        state_ = GameState::RUNNING;
+        timer_->start(shiftHeld_ ? BOOST_SPEED : speed_);
+    }
+}
+
+// Sprint logic - Key Release
+void MainWindow::keyReleaseEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Shift) {
+        shiftHeld_ = false;
+        if (state_ == GameState::RUNNING) timer_->setInterval(speed_); // Revert to normal speed
+        updateHUD();
     }
 }
 
@@ -319,10 +333,21 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
                     p.setBrush(COL_WALL); p.drawRect(rect);
                     break;
                 case Cell::SNAKE_HEAD:
-                    // Draw a protective blue aura if shield is active
-                    if (shieldActive_) drawGlow(p, cx, cy, cw * 2.0f, COL_SHIELD);
-                    else drawGlow(p, cx, cy, cw * 1.5f, COL_HEAD);
-                    p.setBrush(COL_HEAD); p.drawRoundedRect(rect, 4, 4);
+                    if (shieldActive_) {
+                        // Special lighting: Bright white head with expanded cyan shield aura
+                        drawGlow(p, cx, cy, cw * 2.5f, COL_SHIELD);
+                        p.setBrush(Qt::white);
+                        p.drawRoundedRect(rect, 4, 4);
+
+                        // Inner cyan core
+                        p.setBrush(COL_SHIELD);
+                        p.drawRoundedRect(rect.adjusted(3, 3, -3, -3), 2, 2);
+                    } else {
+                        // Standard head
+                        drawGlow(p, cx, cy, cw * 1.5f, COL_HEAD);
+                        p.setBrush(COL_HEAD);
+                        p.drawRoundedRect(rect, 4, 4);
+                    }
                     break;
                 case Cell::SNAKE_BODY:
                     drawGlow(p, cx, cy, cw * 1.2f, COL_SNAKE);
@@ -341,7 +366,6 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
         }
     }
 
-    // Draw Bonus Fruit (Blinks rapidly when under 10 ticks)
     if (bonusPos_.first > 0 && bonusTimeLeft_ > 0) {
         if (bonusTimeLeft_ > 10 || (bonusTimeLeft_ % 2 == 0)) {
             float cx = bonusPos_.first * cw + cw/2.0f;
@@ -353,7 +377,6 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
         }
     }
 
-    // Draw Shield Pickup
     if (shieldPos_.first > 0 && !shieldActive_) {
         float cx = shieldPos_.first * cw + cw/2.0f;
         float cy = shieldPos_.second * ch + ch/2.0f;
@@ -369,7 +392,7 @@ void MainWindow::paintBoard(QPainter &p, int boardW, int boardH) {
         p.setFont(QFont("Courier New", 26, QFont::Bold));
 
         if (state_ == GameState::MENU) {
-            p.drawText(0, 0, boardW, boardH, Qt::AlignCenter, "NEON SNAKE\n\nPress SPACE to Start");
+            p.drawText(0, 0, boardW, boardH, Qt::AlignCenter, "NEON SNAKE\n\nPress SPACE to Start\n(Hold SHIFT to Sprint)");
         } else if (state_ == GameState::PAUSED) {
             p.drawText(0, 0, boardW, boardH, Qt::AlignCenter, "PAUSED\n\nPress P to Resume");
         } else if (state_ == GameState::GAME_OVER) {

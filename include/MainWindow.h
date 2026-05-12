@@ -24,6 +24,7 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override; // Added to detect Shift release
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
@@ -48,6 +49,10 @@ private:
     int        score_, level_, speed_;
     int        foodEaten_;
     static constexpr int FOOD_PER_LEVEL = 5;
+
+    // Sprint Mechanics
+    bool shiftHeld_ = false;
+    static constexpr int BOOST_SPEED = 45; // Fast tick rate for sprinting
 
     Position bonusPos_;
     int      bonusTimeLeft_;
