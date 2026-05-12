@@ -4,7 +4,7 @@
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     MainWindow window;
-    window.setWindowTitle("Classic Snake");
+    window.setWindowTitle("Neon Snake");
     window.show();
     return app.exec();
 }

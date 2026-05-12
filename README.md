@@ -1,20 +1,32 @@
 # Snake Game
+
+## Group Members
+1. Amr Ahmed Nagy - 2300162
+2. Ali Ahmed Ayman - 2300346
+3. Wesam Ayman AbdElfattah - 2300627
+4. Omar Ahmed Mohamed - 2300164
+5. Ziad Moried Mohamed - 2300135
+
+---
+
 ## Project Description
-A fully playable console Snake Game written in standard C++17. The snake moves around a bordered grid, eating food to grow longer and score points. The game ends when the snake collides with a wall, obstacle, or itself. The difficulty increases automatically as the player scores more points.
+A fully playable console and GUI Snake Game written in standard C++17 utilizing the Qt6 framework. The snake moves around a bordered grid, eating food to grow longer and score points. The game ends when the snake collides with an obstacle or itself. The difficulty increases automatically as the player scores more points, introducing obstacles and faster game speeds.
 
 ---
 
 ## Features
-- [x] Snake movement (W/A/S/D keys)
-- [x] Food spawning (random empty cell selection)
-- [x] Snake growth on food collection
-- [x] Collision detection — walls, self, obstacles
-- [x] Scoring system (10 × level per food eaten)
-- [x] Levels with increasing speed (level up every 5 foods)
-- [x] Obstacle tiles appear at level 3 and above
-- [x] Pause / Resume (P key)
-- [x] Persistent high score saved to `data/highscore.txt`
-- [x] Restart without exiting (R at Game Over screen)
+- [x] Dual interface: Playable via Command Line or a Neon Arcade Graphical User Interface (Qt6).
+- [x] Snake movement (W/A/S/D keys) with wall-wrapping capabilities.
+- [x] Food spawning (random empty cell selection).
+- [x] Snake growth on food collection.
+- [x] Collision detection — self and obstacles.
+- [x] Scoring system (10 × level per food eaten, plus 50 × level for Bonus fruits).
+- [x] Levels with increasing speed (level up every 5 foods).
+- [x] Dynamic Obstacles that spawn upon leveling up.
+- [x] Power-ups: Shield (protects against one obstacle) and Bonus Fruit (temporary high-score boost).
+- [x] Sprint mechanic (Hold Shift to boost speed).
+- [x] Pause / Resume (P key).
+- [x] Persistent high score saved to `data/highscore.txt`.
 
 ---
 
@@ -39,58 +51,32 @@ The board stores the game state as a **2-D grid** indexed `grid_[row][col]`.
 |-----------|-----------|
 | Read/write any cell | **O(1)** |
 | Full redraw per frame | O(W × H) = O(600) — constant for fixed board |
-| Wall collision check | **O(1)** |
+| Obstacle collision check | **O(1)** |
 
-**Why not a flat 1-D array?** Same asymptotic complexity, but 2-D indexing is clearer and less error-prone for students.
+**Why not a flat 1-D array?** Same asymptotic complexity, but 2-D indexing is clearer and highly efficient for tracking spatial coordinates.
 
-### 3. `std::vector<Position>` — Food Candidate List (inside `Food::spawn`)
-When spawning food we collect all empty cells into a temporary vector, then pick one randomly.
+### 3. `std::vector<Position>` — Dynamic Spawning (inside `Food::spawn`, `Shield`, `Bonus`)
+When spawning items, we collect all empty cells into a temporary vector, then pick one randomly.
 
 | Operation | Complexity |
 |-----------|-----------|
 | Build candidate list | O(W × H) |
 | Random selection | **O(1)** |
 
-**Why not loop until we find an empty cell?** That could loop forever on a nearly-full board.
+**Why not loop until we find an empty cell?** That could loop forever on a nearly-full board and cause massive lag spikes.
 
 ---
 
 ## How to Compile and Run
 
-### Linux / macOS
+### CMake (Recommended for Qt6 GUI)
 ```bash
-# Requires g++ with C++17 support
-make
-./snake_game
-```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+./SnakeGame
 
-### Windows (MinGW / MSYS2)
-```bash
-g++ -std=c++17 -Wall -I include/ -o snake_game.exe src/*.cpp
-snake_game.exe
-```
-
-### Windows (Visual Studio)
-1. Create a new Empty C++ Project.
-2. Add all files from `src/` and `include/`.
-3. Set C++ Standard to C++17 in Project Properties.
-4. Build and run.
-
----
-
-## Example Output
-```
- Score:    50   Level: 2   High Score:   80
-
-##############################
-#                            #
-#   ooo                      #
-#   O                        #
-#              *             #
-#                            #
-##############################
-
- Controls: W/A/S/D  |  P = Pause  |  Q = Quit
 ```
 
 ---
@@ -98,39 +84,13 @@ snake_game.exe
 ## AI Usage Declaration
 
 | Tool | Used For | Outcome |
-|------|----------|---------|
+| --- | --- | --- |
 | Claude (Anthropic) | Initial architecture brainstorming & boilerplate generation | Used as a starting point; restructured class relationships ourselves |
+| Gemini (Google) | Refactoring GUI logic | Used to decouple complex Qt6 UI elements and build a clean State Machine. |
 | Claude (Anthropic) | Explaining `std::deque` trade-offs vs. vector/list | Helped us understand and justify our DSA choice |
-| Claude (Anthropic) | Generating cross-platform input handling snippet (conio.h / termios) | We tested it, found the arrow-key prefix byte was wrong on our machines, and fixed the `\xe0` prefix case ourselves |
-| Claude (Anthropic) | Suggesting test cases for boundary collisions | Some suggested cases used, others we wrote from scratch |
 
-**What we modified or rejected:** The AI initially suggested using a raw C array for the board. We replaced it with `vector<vector<Cell>>` because it is safer (no manual memory management) and more idiomatic C++17.
+**What we modified or rejected:** The AI initially suggested using a raw C array for the board. We replaced it with `vector<vector<Cell>>` because it is safer (no manual memory management) and more idiomatic C++17. We also rejected a highly bloated particle-engine GUI suggestion in favor of a cleaner, minimal glowing UI to maintain focus on the core algorithms.
 
 **Example where AI output was not fully correct:** The original AI-generated `getKey()` used `key == 224` as an integer comparison, which triggered a signed/unsigned comparison warning and behaved incorrectly on some compilers. We changed the condition to compare with the correct hex literal `'\xe0'` and added a cast.
 
-**What we understood and implemented ourselves:** The complete game loop logic, the level-up threshold formula, the obstacle spawning system, and all collision detection logic were designed and written by our group.
-
----
-
-## Project Structure
-```
-snake_game/
-├── include/
-│   ├── Common.h         — shared types, constants, Position alias
-│   ├── Snake.h          — deque-based snake class
-│   ├── Food.h           — food spawning
-│   ├── Board.h          — 2-D grid + renderer
-│   ├── ScoreManager.h   — file-based high score
-│   └── Game.h           — main game engine
-├── src/
-│   ├── main.cpp         — entry point
-│   ├── Snake.cpp
-│   ├── Food.cpp
-│   ├── Board.cpp
-│   ├── ScoreManager.cpp
-│   └── Game.cpp
-├── data/
-│   └── highscore.txt    — auto-created; stores single integer
-├── Makefile
-└── README.md
-```
+**What we understood and implemented ourselves:** The complete game loop logic, the State Machine architecture, the level-up threshold formula, the dynamic obstacle spawning system, and the O(1) grid collision logic were fundamentally designed and managed by our group.
