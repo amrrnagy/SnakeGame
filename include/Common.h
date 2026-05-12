@@ -1,6 +1,6 @@
 #pragma once
-#include <utility>   // std::pair
 
+#include <utility>
 
 const int BOARD_WIDTH  = 30;
 const int BOARD_HEIGHT = 20;
@@ -13,9 +13,9 @@ enum class Cell {
     SNAKE_HEAD,
     SNAKE_BODY,
     FOOD,
-    OBSTACLE   // used by level 3+
+    OBSTACLE
 };
 
+enum class GameState { MENU, RUNNING, PAUSED, GAME_OVER, QUIT };
 
-// Position = (x, y) where x is column, y is row
 using Position = std::pair<int, int>;

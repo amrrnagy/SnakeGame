@@ -1,7 +1,3 @@
-// =============================================================================
-// Board.cpp — Implements the Board class (2-D grid + console renderer).
-// =============================================================================
-
 #include "Board.h"
 #include <iostream>
 #include <iomanip>
@@ -11,7 +7,7 @@ Board::Board()
 {
     initWalls();
 }
-/*
+
 void Board::initWalls() {
     for (int x = 0; x < BOARD_WIDTH; ++x) {
         grid_[0][x]               = Cell::WALL;
@@ -21,7 +17,7 @@ void Board::initWalls() {
         grid_[y][0]               = Cell::WALL;
         grid_[y][BOARD_WIDTH - 1] = Cell::WALL;
     }
-}*/
+}
 
 void Board::resetInner() {
     for (int y = 1; y < BOARD_HEIGHT - 1; ++y)
@@ -30,15 +26,27 @@ void Board::resetInner() {
                 grid_[y][x] = Cell::EMPTY;
 }
 
-void Board::resetObstacles()
-{
+void Board::resetObstacles() {
     for (int y = 1; y < BOARD_HEIGHT - 1; ++y)
-    {
         for (int x = 1; x < BOARD_WIDTH - 1; ++x)
-        {
             grid_[y][x] = Cell::EMPTY;
-        }
+}
+
+void Board::addObstacle(int x, int y) {
+    if (y > 0 && y < BOARD_HEIGHT - 1 && x > 0 && x < BOARD_WIDTH - 1) {
+        grid_[y][x] = Cell::OBSTACLE;
     }
+}
+
+bool Board::isObstacle(int x, int y) const {
+    if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return false;
+    return grid_[y][x] == Cell::OBSTACLE;
+}
+
+// RESTORED MISSING FUNCTION
+bool Board::isWall(int x, int y) const {
+    if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return true;
+    return grid_[y][x] == Cell::WALL;
 }
 
 void Board::update(const Snake& snake, const Food& food) {
@@ -58,20 +66,32 @@ void Board::update(const Snake& snake, const Food& food) {
     }
 }
 
-bool Board::isWall(int x, int y) const {
-    if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return true;
-    return grid_[y][x] == Cell::WALL;
-}
+void Board::render(int score, int level, int highScore) const {
+#ifdef _WIN32
+    system("cls");
+#else
+    std::cout << "\033[H\033[2J";
+#endif
 
-bool Board::isObstacle(int x, int y) const {
-    if (y < 0 || y >= BOARD_HEIGHT || x < 0 || x >= BOARD_WIDTH) return false;
-    return grid_[y][x] == Cell::OBSTACLE;
-}
+    std::cout << " Score: " << std::setw(5) << score
+              << "   Level: " << level
+              << "   High Score: " << highScore << "\n";
 
-void Board::addObstacle(int x, int y) {
-    if (y > 0 && y < BOARD_HEIGHT - 1 && x > 0 && x < BOARD_WIDTH - 1) {
-        grid_[y][x] = Cell::OBSTACLE;
+    for (int y = 0; y < BOARD_HEIGHT; ++y) {
+        for (int x = 0; x < BOARD_WIDTH; ++x) {
+            switch (grid_[y][x]) {
+                case Cell::WALL:       std::cout << '#'; break;
+                case Cell::SNAKE_HEAD: std::cout << 'O'; break;
+                case Cell::SNAKE_BODY: std::cout << 'o'; break;
+                case Cell::FOOD:       std::cout << '*'; break;
+                case Cell::OBSTACLE:   std::cout << '+'; break;
+                default:               std::cout << ' '; break;
+            }
+        }
+        std::cout << '\n';
     }
+    std::cout << " Controls: W/A/S/D  |  P = Pause  |  Q = Quit\n";
+    std::cout.flush();
 }
 
 const std::vector<std::vector<Cell>>& Board::getGrid() const {
